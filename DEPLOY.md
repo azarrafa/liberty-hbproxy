@@ -4,8 +4,8 @@ Names used below: `<SERVER_DIR>` = `<WORK_DIR>/<APPLID>/<JVMSERVER>/wlp/usr/serv
 
 ## 0. Before you start (one time, by the owners of each area)
 
-1. **RACF**: run the relevant parts of `config/racf-setup.txt` (RACMAP for the caller, PTKTDATA for the APPLID and the service ID, Liberty angel and `SERVER` profiles, key ring).
-   Do not run the region as `PRIVILEGED` in the STARTED class (see the note in that file).
+1. **Security product**: on RACF run the relevant parts of `config/racf-setup.txt`; on Top Secret edit and run `config/tss-setup.jcl` (generate the PassTicket session key yourself; it is a secret). Both cover: the identity mapping for the caller, PassTicket for the APPLID and the service ID, the Liberty angel and `SERVER` profiles, the key ring.
+   RACF only: do not run the region as `PRIVILEGED` in the STARTED class (see the note in `racf-setup.txt`). On Top Secret, give the region ACID only the permits in the job; the PassTicket permit is per service ACID in production.
 2. **CICS**: JVM server and HB.js service as in `config/cics-definitions.txt`.
 3. **JVM profile**: apply the settings of `config/DFHWLP.jvmprofile.settings` to the profile the JVMSERVER uses (`JVMPROFILEDIR`).
 4. **Token issuer**: note its issuer URL, JWKS URL, the audience and the client ID your callers' tokens carry; they go into `server.xml`.

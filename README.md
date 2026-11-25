@@ -26,6 +26,7 @@ Caller --Bearer JWT--> Liberty (CICS JVM server) :7443
 | `config/configDropins/overrides/hbproxy-app.xml` | the application, its settings and the RACF Java library |
 | `config/DFHWLP.jvmprofile.settings` | the JVM profile settings that matter |
 | `config/racf-setup.txt` | RACF commands (RACMAP, PassTicket, Liberty services) |
+| `config/tss-setup.jcl` | the same setup for Top Secret (TSS), as a job: PassTicket, identity map, Liberty services, key ring |
 | `config/cics-definitions.txt` | JVMSERVER and the HB.js TCPIPSERVICE requirements |
 | `DEPLOY.md` | the procedure, in order, with checks and rollback |
 
@@ -36,7 +37,7 @@ replaced by `<PLACEHOLDERS>`. Nothing in this package is a secret; the PassTicke
 
 - CICS TS 6.1 (or any release with the Liberty JVM server and the `cicsts:security-1.0` feature), Java 11 or later in the JVM server (the reference uses Java 21).
 - Liberty features: `cicsts:core-1.0`, `cicsts:defaultApp-1.0`, `cicsts:security-1.0`, `transportSecurity-1.0`, `openidConnectClient-1.0` (and `jndi-1.0`, normally pulled in by the others).
-- The Liberty angel started task, RACF (RACMAP, PTKTDATA) and a SAF key ring for the region user: all set up in `config/racf-setup.txt`.
+- The Liberty angel started task, RACF (RACMAP, PTKTDATA) or Top Secret (IDMAP, PTKTDATA) and a SAF key ring for the region user: all set up in `config/racf-setup.txt` or `config/tss-setup.jcl`.
 - HB.js reachable over HTTPS with Basic authentication.
 - To build: a JDK 11+ (`javac`, `jar`) and a servlet API 3.0 jar, which Liberty ships (`<WLP_INSTALL_DIR>/dev/api/spec/com.ibm.websphere.javaee.servlet.3.0_*.jar`).
 
