@@ -1,0 +1,40 @@
+# JVM profile settings that matter for hbproxy: the NON-COMMENT lines of the live profile
+#   DFHWLP.jvmprofile of the reference LPAR, with site values replaced.
+# Start from the profile CICS ships (DFHWLP.jvmprofile in <CICS install>/JVMProfiles, or DFH$WLP in group DFH$WLP) and set these.
+# The directory that holds the profile is the CICS system initialization parameter JVMPROFILEDIR.
+# Do NOT put a comment after a value on the same line: everything after the "=" is part of the value.
+
+# Reference: Java 21 (J21.0_64). hbproxy compiles with --release 11 and uses java.net.http.
+JAVA_HOME=<JAVA_HOME>
+# The server directory is <WORK_DIR>/<APPLID>/<JVMSERVER>/wlp/usr/servers/defaultServer
+WORK_DIR=<WORK_DIR>
+# Add /usr/lib/java_runtime if the JNI library of IRRRacf.jar is not found (UnsatisfiedLinkError).
+LIBPATH_SUFFIX=/usr/lib
+WLP_INSTALL_DIR=<CICS_INSTALL>/usr/lpp/cicsts/<cicssys>/wlp
+
+# server.xml is maintained by hand (see config/server.xml)
+-Dcom.ibm.cics.jvmserver.wlp.autoconfigure=false
+-Dcom.ibm.cics.jvmserver.wlp.server.http.port=7000
+-Dcom.ibm.cics.jvmserver.wlp.server.https.port=7443
+-Dcom.ibm.cics.jvmserver.controller.timeout=600000
+OSGI_FRAMEWORK_TIMEOUT=600
+LOG_FILES_MAX=5
+
+# Key ring that holds the Liberty server certificate (same value as in server.xml)
+-Dcom.ibm.cics.jvmserver.wlp.server.keystore.location=safkeyring://<REGION_USERID>/<KEYRING>
+-Dcom.ibm.cics.jvmserver.wlp.server.keystore.type=JCERACFKS
+
+# z/OS authorized services (SAF credentials, RACMAP) need the Liberty angel process
+-Dcom.ibm.ws.zos.core.angelRequired=true
+-Dcom.ibm.ws.zos.core.angelName=<ANGEL_NAME>
+
+-Xms128M
+-Xmx256M
+-Xmso1M
+-Xgcpolicy:gencon
+-Xscmx256M
+-Xshareclasses:name=cicsts.&APPLID;,groupAccess,nonfatal
+-Xtune:virtualized
+-Dcom.ibm.tools.attach.enable=no
+-Dfile.encoding=ISO-8859-1
+_BPXK_DISABLE_SHLIB=YES

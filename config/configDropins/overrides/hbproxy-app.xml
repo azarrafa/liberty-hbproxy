@@ -1,0 +1,49 @@
+<!-- hbproxy application and settings. Install as
+       <server dir>/configDropins/overrides/hbproxy-app.xml      (ISO-8859-1: chtag -tc ISO8859-1 hbproxy-app.xml)
+     with the war at
+       <server dir>/apps/hbproxy.war                              (upload in BINARY)
+     <server dir> = <WORK_DIR>/<APPLID>/<JVMSERVER>/wlp/usr/servers/defaultServer
+     Derived from the live override on the reference LPAR. Replace every <PLACEHOLDER>. -->
+<server>
+  <!-- IRRRacf.jar holds com.ibm.eserver.zos.racf.IRRPassTicket (z/OS Java RACF API). Verify:  unzip -l /usr/include/java_classes/IRRRacf.jar
+       If the application reports UnsatisfiedLinkError, put the directory of its JNI library (usually /usr/lib/java_runtime) in
+       LIBPATH_SUFFIX of the JVM profile. -->
+  <library id="racfLib">
+    <fileset dir="/usr/include/java_classes" includes="IRRRacf.jar"/>
+  </library>
+
+  <!-- Settings, read at application start through JNDI "hbproxy/<name>". Fallbacks: system property hbproxy.<name>, then environment
+       variable HBPROXY_<NAME>. Touch this file (or deploy a war with a new name) to re-read them.
+       REQUIRED (no default; the application refuses to start without them):
+         target  base URL of HB.js, scheme://host:port, no path. Use the HB.js port that authenticates with Basic (PassTicket).
+         applid  the APPLID of the CICS region, exactly as defined in the RACF PTKTDATA profile. -->
+  <jndiEntry jndiName="hbproxy/target" value="https://<HBJS_HOST>:<HBJS_PORT>"/>
+  <jndiEntry jndiName="hbproxy/applid" value="<CICS_APPLID>"/>
+
+  <!-- OPTIONAL (defaults in brackets) -->
+  <!-- seconds a caller waits for a slot when maxConcurrent is reached, then 503 + Retry-After [5] -->
+  <jndiEntry jndiName="hbproxy/queueTimeout" value="5"/>
+  <!-- cap on concurrent calls to HB.js [0 = no cap]. Set it if HB.js shows instability under parallel load (4 was used on the reference LPAR). -->
+  <!-- <jndiEntry jndiName="hbproxy/maxConcurrent" value="4"/> -->
+  <!-- add a Server-Timing header to every response (for measurements; leave false in production) [false] -->
+  <jndiEntry jndiName="hbproxy/timing" value="false"/>
+  <!-- comma list of path prefixes that may be forwarded [/ = everything]. Recommended in production. -->
+  <!-- <jndiEntry jndiName="hbproxy/allowedPrefix" value="/hbscript/,/hbservice/"/> -->
+  <!-- seconds [10] / seconds [60] / bytes [10485760] -->
+  <!-- <jndiEntry jndiName="hbproxy/connectTimeout" value="10"/> -->
+  <!-- <jndiEntry jndiName="hbproxy/readTimeout" value="60"/> -->
+  <!-- <jndiEntry jndiName="hbproxy/maxBody" value="10485760"/> -->
+  <!-- TLS versions offered to HB.js, for example TLSv1.2 [JVM default] -->
+  <!-- <jndiEntry jndiName="hbproxy/tlsProtocols" value="TLSv1.2"/> -->
+
+  <!-- contextRoot="/": the proxy answers at the root, so the path is identical to HB.js (https://<liberty>:7443/hbscript/NAME).
+       Only one application can own "/". Other applications keep their own contexts; Liberty picks the longest match. -->
+  <webApplication id="hbproxy" name="hbproxy" location="${server.config.dir}/apps/hbproxy.war" contextRoot="/" autoStart="true">
+    <classloader commonLibraryRef="racfLib"/>
+    <application-bnd>
+      <security-role name="users">
+        <special-subject type="ALL_AUTHENTICATED_USERS"/>
+      </security-role>
+    </application-bnd>
+  </webApplication>
+</server>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Liberty server.xml for the CICS JVM server that runs hbproxy.
+     Derived from the live server on the reference LPAR (.../CICSWLP/wlp/usr/servers/defaultServer/server.xml).
+     Replace every <PLACEHOLDER>. Install as ISO-8859-1 text:  chtag -tc ISO8859-1 server.xml
+     The JVM profile has -Dcom.ibm.cics.jvmserver.wlp.autoconfigure=false, so this file is yours to maintain. -->
+<server description="CICS Liberty: OIDC token to RACF ID to PassTicket to HB.js">
+
+    <featureManager>
+        <feature>cicsts:core-1.0</feature>
+        <feature>cicsts:defaultApp-1.0</feature>
+        <feature>cicsts:security-1.0</feature>
+        <feature>transportSecurity-1.0</feature>
+        <feature>openidConnectClient-1.0</feature>
+        <!-- jndiEntry (hbproxy settings) is provided by the jndi-1.0 feature, which the features above already pull in on the reference
+             server. If the CWWKG messages say jndiEntry is unknown, add:  <feature>jndi-1.0</feature> -->
+    </featureManager>
+
+    <!-- Inbound listener. 7443 is the port callers use. Set httpPort="-1" if you do not want the clear-text port (7000) at all. -->
+    <httpEndpoint host="*" httpPort="7000" httpsPort="7443" id="defaultHttpEndpoint"/>
+
+    <!-- Inbound token validation (resource-server mode: the caller sends "Authorization: Bearer <JWT>").
+         userIdentifier="sub": the token's sub claim is what RACMAP matches (USERDIDFILTER) to a RACF ID.
+         inboundPropagation="required": a call without a valid token is refused (401). -->
+    <openidConnectClient id="RS"
+        clientId="<OIDC_CLIENT_ID>"
+        issuerIdentifier="<ISSUER_URL>"
+        jwkEndpointUrl="<JWKS_URL>"
+        audiences="<AUDIENCE>"
+        signatureAlgorithm="RS256"
+        inboundPropagation="required"
+        mapIdentityToRegistryUser="false"
+        tokenReuse="true"
+        userIdentifier="sub"/>
+
+    <!-- RACMAP: the sub claim maps to a RACF ID (see config/racf-setup.txt). -->
+    <safCredentials mapDistributedIdentities="true"/>
+    <safRegistry enableFailover="false" id="saf"/>
+
+    <!-- TLS: the server certificate and the trusted CAs come from the SAF key ring. -->
+    <ssl id="defaultSSLConfig" keyStoreRef="defaultKeyStore" sslProtocol="TLSv1.2,TLSv1.3" clientAuthenticationSupported="true"/>
+    <keyStore id="defaultKeyStore" fileBased="false" location="safkeyring://<REGION_USERID>/<KEYRING>" readOnly="true" type="JCERACFKS"/>
+
+    <!-- polled: Liberty notices changes to this file and to configDropins/overrides/*.xml. Applications are NOT picked up from dropins,
+         and an updated war with the SAME file name is not reloaded: deploy a war with a NEW name, or touch the override file
+         (see DEPLOY.md, "Deploy"). -->
+    <config monitorInterval="5s" updateTrigger="polled"/>
+    <applicationMonitor dropins="dropins" dropinsEnabled="false" pollingRate="5s" updateTrigger="disabled"/>
+
+    <cdi12 enableImplicitBeanArchives="false"/>
+    <executor id="allowCICSconfigure" coreThreads="12" maxThreads="15"/>
+
+    <!-- Written by CICS for bundle-installed applications. Keep. -->
+    <include id="cics_auto" location="${server.config.dir}/installedApps.xml" onConflict="IGNORE"/>
+
+    <!-- hbproxy itself is declared in configDropins/overrides/hbproxy-app.xml. -->
+</server>

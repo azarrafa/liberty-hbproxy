@@ -1,0 +1,13 @@
+* CICS definitions. Check attribute names against the CICS sample DFHWLP in group DFH$WLP (CEDA EXPAND GROUP(DFH$WLP)).
+
+* Liberty JVM server. JVMPROFILE = the member name of the JVM profile (no suffix). The server directory is named after the JVMSERVER.
+CEDA DEFINE JVMSERVER(<JVMSERVER>) GROUP(<GROUP>) JVMPROFILE(<PROFILE>) THREADLIMIT(15)
+* THREADLIMIT 15 matches the executor in server.xml (maxThreads 15). Check MAXOPENTCBS (system-wide TCB limit) leaves room for it.
+CEDA ADD GROUP(<GROUP>) LIST(<GRPLIST>)
+CEDA INSTALL GROUP(<GROUP>)
+CEMT INQUIRE JVMSERVER(<JVMSERVER>)     (want ENABLED)
+
+* HB.js side: the TCPIPSERVICE hbproxy calls must authenticate with Basic (the PassTicket is sent as the password) and use TLS:
+*   TCPIPSERVICE  PORTNUMBER(<HBJS_PORT>)  AUTHENTICATE(BASIC)  SSL(YES or ATTLSAWARE)  TRANSACTION(CWXN)
+* Keep this port off the open network: the proxy is the intended way in (bind it to a loopback address with IPADDRESS(), or restrict it
+* with AT-TLS / a firewall). Anyone who can reach it can try RACF passwords by Basic.
